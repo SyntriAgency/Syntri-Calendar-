@@ -1,0 +1,224 @@
+// Syntri — Prosty szkielet kalendarza
+// Założenia:
+// - Siatka dni (miesiąc), kliknięcie dnia otwiera panel boczny z prostymi slotami godzinowymi
+// - Minimalny, czysty kod, bez zależności zewnętrznych (poza Tailwind w środowisku ChatGPT)
+// - Start tygodnia: poniedziałek
+// - Nawigacja miesiąc wstecz / naprzód
+// - Miejsce na integrację callbacków (onSelectSlot)
+
+import { useMemo, useState } from "react";
+
+export default function CalendarSkeleton() {
+  const now = new Date();
+  const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1)); // pierwszy dzień miesiąca
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set()); // klucze: ISO bez minut sekund (YYYY-MM-DDTHH)
+
+  // Ustawienia slotów — łatwo zmienić w jednym miejscu
+  const SLOT_START_HOUR = 8;   // 08:00
+  const SLOT_END_HOUR = 18;    // 18:00 (bez 18:00, więc 17:00 ostatni start) — poniżej generujemy inclusive of end-1
+  const SLOT_STEP_MIN = 60;    // co 60 min
+
+  const monthMatrix = useMemo(() => buildMonthMatrix(cursor), [cursor]);
+  const monthLabel = cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  function gotoMonth(delta: number) {
+    setCursor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1));
+  }
+
+  function onDayClick(d: Date) {
+    setSelectedDate(d);
+  }
+
+  function toggleSlot(date: Date, hour: number, minute: number) {
+    const key = slotKey(date, hour, minute);
+    setSelectedSlots((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      // Hook do integracji — w realnym projekcie podmień console.log na onSelectSlot(...)
+      console.log("slot: ", key, next.has(key) ? "selected" : "unselected");
+      return next;
+    });
+  }
+
+  const isToday = (d: Date) => sameDate(d, new Date());
+  const isInCursorMonth = (d: Date) => d.getMonth() === cursor.getMonth();
+
+  return (
+    <div className="w-full h-full min-h-[540px] grid grid-cols-12 gap-4 p-4 bg-neutral-50">
+      {/* Kalendarz (lewa część) */}
+      <div className="col-span-12 lg:col-span-8 xl:col-span-9">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xl font-semibold capitalize">{monthLabel}</div>
+          <div className="flex items-center gap-2">
+            <button className="px-3 py-1 rounded-xl shadow-sm border bg-white hover:bg-neutral-50" onClick={() => gotoMonth(-1)} aria-label="Poprzedni miesiąc">←</button>
+            <button className="px-3 py-1 rounded-xl shadow-sm border bg-white hover:bg-neutral-50" onClick={() => setCursor(new Date(now.getFullYear(), now.getMonth(), 1))}>Dziś</button>
+            <button className="px-3 py-1 rounded-xl shadow-sm border bg-white hover:bg-neutral-50" onClick={() => gotoMonth(1)} aria-label="Następny miesiąc">→</button>
+          </div>
+        </div>
+
+        {/* Nagłówki dni tygodnia */}
+        <div className="grid grid-cols-7 text-xs uppercase tracking-wide text-neutral-500 mb-1">
+          {['Pn','Wt','Śr','Cz','Pt','So','Nd'].map((d) => (
+            <div key={d} className="px-2 py-2">{d}</div>
+          ))}
+        </div>
+
+        {/* Siatka dni 6x7 */}
+        <div className="grid grid-cols-7 grid-rows-6 gap-1">
+          {monthMatrix.map((d) => {
+            const inMonth = isInCursorMonth(d);
+            const today = isToday(d);
+            const selected = selectedDate && sameDate(selectedDate, d);
+            return (
+              <button
+                key={d.toISOString()}
+                onClick={() => onDayClick(d)}
+                className={[
+                  "group text-left rounded-xl border p-2 h-24 flex flex-col gap-1 transition",
+                  "bg-white hover:bg-neutral-50",
+                  inMonth ? "border-neutral-200" : "border-neutral-100 opacity-60",
+                  selected ? "ring-2 ring-black" : "",
+                ].join(' ')}
+                aria-pressed={selected}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">
+                    {d.getDate()}
+                  </div>
+                  {today && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border">Dziś</span>
+                  )}
+                </div>
+                {/* Placeholder na skróty zdarzeń/dotki */}
+                <div className="mt-auto text-[11px] text-neutral-500">—</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Panel boczny (prawa część) */}
+      <div className="col-span-12 lg:col-span-4 xl:col-span-3">
+        <div className="sticky top-4 rounded-2xl border bg-white shadow-sm min-h-[320px]">
+          <div className="p-4 border-b">
+            <div className="text-sm text-neutral-500">Wybrany dzień</div>
+            <div className="text-lg font-semibold">
+              {selectedDate ? formatHumanDate(selectedDate) : "Kliknij dzień w kalendarzu"}
+            </div>
+          </div>
+
+          <div className="p-2">
+            {selectedDate ? (
+              <SlotList
+                date={selectedDate}
+                startHour={SLOT_START_HOUR}
+                endHour={SLOT_END_HOUR}
+                stepMin={SLOT_STEP_MIN}
+                selectedSlots={selectedSlots}
+                onToggle={(h,m) => toggleSlot(selectedDate, h, m)}
+              />
+            ) : (
+              <div className="p-4 text-sm text-neutral-500">
+                Wybierz dzień, aby zobaczyć sloty godzinowe.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlotList({
+  date,
+  startHour,
+  endHour,
+  stepMin,
+  selectedSlots,
+  onToggle,
+}: {
+  date: Date;
+  startHour: number;
+  endHour: number; // exclusive
+  stepMin: number;
+  selectedSlots: Set<string>;
+  onToggle: (h: number, m: number) => void;
+}) {
+  const slots = useMemo(() => buildSlots(date, startHour, endHour, stepMin), [date, startHour, endHour, stepMin]);
+
+  return (
+    <div className="flex flex-col divide-y">
+      {slots.map(({ hour, minute, label }) => {
+        const key = slotKey(date, hour, minute);
+        const active = selectedSlots.has(key);
+        return (
+          <button
+            key={key}
+            onClick={() => onToggle(hour, minute)}
+            className={[
+              "w-full text-left px-4 py-3 transition flex items-center justify-between",
+              active ? "bg-black text-white" : "hover:bg-neutral-50",
+            ].join(' ')}
+            aria-pressed={active}
+          >
+            <span className="font-medium">{label}</span>
+            <span className="text-xs opacity-70">{active ? "Wybrano" : ""}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ===== Helpers =====
+function buildMonthMatrix(cursor: Date): Date[] {
+  // Generujemy 6 tygodni * 7 dni = 42 komórki, od poniedziałku
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const firstWeekday = dowMonFirst(firstOfMonth); // 0..6, gdzie 0=Pn
+  const start = new Date(year, month, 1 - firstWeekday);
+
+  const cells: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    cells.push(d);
+  }
+  return cells;
+}
+
+function dowMonFirst(d: Date): number {
+  // JS: 0=Nd..6=So; chcemy 0=Pn..6=Nd
+  const js = d.getDay();
+  return (js + 6) % 7;
+}
+
+function sameDate(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function formatHumanDate(d: Date) {
+  return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function slotKey(date: Date, hour: number, minute: number) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(hour).padStart(2, '0');
+  const mi = String(minute).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function buildSlots(date: Date, startHour: number, endHour: number, stepMin: number) {
+  const slots: { hour: number; minute: number; label: string }[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (let m = 0; m < 60; m += stepMin) {
+      const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      slots.push({ hour: h, minute: m, label });
+    }
+  }
+  return slots;
+}
