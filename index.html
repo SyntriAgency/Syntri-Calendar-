@@ -3,52 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Syntri — Prosty szkielet kalendarza (HTML)</title>
+  <title>Syntri — Kalendarz v2 (HTML, skeleton + smart UI)</title>
   <style>
-    :root {
-      --bg: #f6f6f6;
-      --card: #ffffff;
-      --ink: #111111;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --ring: #111111;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: var(--ink); background: var(--bg); }
+    :root{ --bg:#f6f6f6; --card:#fff; --ink:#0f172a; --muted:#6b7280; --border:#e5e7eb; --ring:#111; --danger:#dc2626; --ok:#16a34a; --warn:#d97706; --today:#111; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;color:var(--ink);background:var(--bg)}
+    .app{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:1024px){.app{grid-template-columns:2fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border-bottom:1px solid var(--border)}
+    .title{font-weight:700;text-transform:capitalize}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid var(--border);background:#fff;padding:6px 10px;border-radius:10px;cursor:pointer}
+    .btn:hover{background:#f8fafc}
+    .week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:8px 12px 0;color:var(--muted);font-size:12px;text-transform:uppercase}
+    .grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:100px;gap:4px;padding:8px 12px 12px}
+    .day{position:relative;display:flex;flex-direction:column;gap:6px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:12px;text-align:left;cursor:pointer;transition:.15s background}
+    .day:hover{background:#f8fafc}
+    .day.out{opacity:.55}
+    .day .n{font-size:13px;font-weight:700}
+    .day.weekend .n{color:var(--danger)}
+    .day.badge{font-size:10px}
+    .day.selected{outline:2px solid var(--ring)}
+    .day.today{outline:2px dashed var(--today)}
+    .day.disabled{opacity:.45;cursor:not-allowed;background:#fafafa}
+    .day.disabled .x{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:#9ca3af;font-size:22px}
+    .hint{margin-top:auto;font-size:11px;color:var(--muted)}
 
-    .app { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
-    @media (min-width: 1024px) { .app { grid-template-columns: 2fr 1fr; } }
+    .panel{position:sticky;top:16px;display:flex;flex-direction:column;min-height:260px}
+    .panel .head{padding:12px;border-bottom:1px solid var(--border)}
+    .panel .sub{color:var(--muted);font-size:13px}
+    .panel .date{font-size:16px;font-weight:700}
+    .panel .legend{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border)}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:12px}
+    .dot{width:10px;height:10px;border-radius:999px;background:#ddd;display:inline-block}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+    .dot.none{background:#ef4444}
 
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 12px; border-bottom:1px solid var(--border); }
-    .title { font-size: 18px; font-weight: 600; text-transform: capitalize; }
-    .btn { appearance: none; border: 1px solid var(--border); background: white; padding: 6px 10px; border-radius: 10px; cursor: pointer; }
-    .btn:hover { background: #f8fafc; }
+    .section{padding:8px 12px;border-bottom:1px solid var(--border)}
+    .section h3{margin:0 0 6px 0;font-size:14px}
 
-    .weekdays { display:grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px 12px 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing:.03em; }
-    .weekdays div { padding: 8px; }
+    .slots{display:flex;flex-direction:column}
+    .slot{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);background:transparent;cursor:pointer;text-align:left}
+    .slot:hover{background:#f8fafc}
+    .slot.active{background:#111;color:#fff}
+    .slot .mark{font-size:11px;opacity:.8}
 
-    .grid { display:grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 100px; gap: 4px; padding: 8px 12px 12px; }
-    .day { position: relative; display:flex; flex-direction:column; gap:6px; padding: 10px; background: white; border:1px solid var(--border); border-radius: 12px; text-align:left; cursor:pointer; transition: background .15s ease; }
-    .day.out { opacity:.55; }
-    .day:hover { background:#f8fafc; }
-    .day .n { font-size: 13px; font-weight: 600; }
-    .day .badge { font-size: 10px; padding: 2px 6px; border:1px solid var(--border); border-radius: 999px; }
-    .day.selected { outline: 2px solid var(--ring); outline-offset: 0; }
+    .filters{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:999px}
 
-    .panel { position: sticky; top: 16px; min-height: 260px; }
-    .panel .head { padding: 12px; border-bottom:1px solid var(--border); }
-    .panel .sub { color: var(--muted); font-size: 13px; }
-    .panel .date { font-size: 16px; font-weight: 600; }
-
-    .slots { display:flex; flex-direction:column; }
-    .slot { display:flex; align-items:center; justify-content:space-between; padding: 10px 12px; border-bottom:1px solid var(--border); background: transparent; cursor: pointer; text-align:left; }
-    .slot:hover { background:#f8fafc; }
-    .slot.active { background: #111111; color: white; }
-    .slot .mark { font-size: 11px; opacity:.75; }
-
-    .visually-hidden { position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; clip:rect(0 0 0 0); overflow:hidden; white-space:nowrap; }
+    .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:.2s}
+    .toast.show{opacity:1;transform:translateY(0)}
   </style>
 </head>
 <body>
@@ -57,180 +63,242 @@
     <section class="card" aria-label="Kalendarz miesięczny">
       <div class="toolbar">
         <div class="title" id="monthLabel">—</div>
-        <div class="actions" role="group" aria-label="Nawigacja miesiąca">
+        <div class="controls">
           <button class="btn" id="prevBtn" aria-label="Poprzedni miesiąc">←</button>
           <button class="btn" id="todayBtn">Dziś</button>
           <button class="btn" id="nextBtn" aria-label="Następny miesiąc">→</button>
+          <label class="btn" style="display:inline-flex;align-items:center;gap:6px">
+            <input type="checkbox" id="onlyAvailable" /> tylko dni z miejscami
+          </label>
         </div>
       </div>
-      <div class="weekdays" aria-hidden="true">
+      <div class="week" aria-hidden="true">
         <div>Pn</div><div>Wt</div><div>Śr</div><div>Cz</div><div>Pt</div><div>So</div><div>Nd</div>
       </div>
       <div class="grid" id="grid" role="grid" aria-labelledby="monthLabel"></div>
     </section>
 
-    <!-- Panel boczny ze slotami -->
-    <aside class="card panel" aria-label="Panel slotów godzinowych">
+    <!-- Panel boczny -->
+    <aside class="card panel" aria-label="Panel slotów i ustawień">
       <div class="head">
         <div class="sub">Wybrany dzień</div>
         <div class="date" id="selectedDateLabel">Kliknij dzień w kalendarzu</div>
       </div>
-      <div class="slots" id="slots" role="listbox" aria-label="Sloty czasowe"></div>
+
+      <div class="legend">
+        <span class="pill"><span class="dot ok"></span> dużo miejsc</span>
+        <span class="pill"><span class="dot warn"></span> mało miejsc</span>
+        <span class="pill"><span class="dot none"></span> brak miejsc</span>
+        <span class="pill"><span class="badge" style="border-color:#9ca3af;color:#374151">X</span> dzień przeszły</span>
+        <span class="pill"><span class="badge" style="border-color:var(--danger);color:var(--danger)">So/Nd</span> weekend</span>
+      </div>
+
+      <div class="section">
+        <h3>Ustawienia slotów</h3>
+        <div class="filters">
+          <label class="btn" style="display:inline-flex;align-items:center;gap:6px">
+            <input type="checkbox" id="step30" /> krok 30 min (domyślnie 60)
+          </label>
+          <button class="btn" id="selectMorning">Zaznacz rano (08–12)</button>
+          <button class="btn" id="clearSlots">Wyczyść wybór</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Sloty</h3>
+        <div class="slots" id="slots" role="listbox" aria-label="Sloty czasowe"></div>
+      </div>
+
+      <div class="section">
+        <h3>Akcje</h3>
+        <div class="filters">
+          <button class="btn" id="findNext">Znajdź najbliższy wolny dzień</button>
+          <button class="btn" id="exportIcs">Eksportuj .ics (dummy)</button>
+        </div>
+      </div>
     </aside>
   </main>
 
-  <script>
-    // ===== Konfiguracja slotów =====
-    const SLOT_START_HOUR = 8;   // 08:00
-    const SLOT_END_HOUR = 18;    // 18:00 (exclusive)
-    const SLOT_STEP_MIN = 60;    // co 60 min
+  <div class="toast" id="toast"></div>
 
-    // ===== Stan =====
+  <script>
+    // ===== Konfiguracja i stan (mock) =====
+    const SLOT_START_HOUR = 8;
+    const SLOT_END_HOUR = 18; // exclusive
+    const DEFAULT_STEP = 60; // min
+
     const now = new Date();
-    let cursor = new Date(now.getFullYear(), now.getMonth(), 1); // pierwszy dzień bieżącego miesiąca
+    let cursor = new Date(now.getFullYear(), now.getMonth(), 1);
     let selectedDate = null; // Date | null
-    const selectedSlots = new Set(); // klucze: YYYY-MM-DDTHH:mm
+    let stepMin = DEFAULT_STEP;
+    const selectedSlots = new Set(); // keys YYYY-MM-DDTHH:mm
+
+    // Mock dostępności: map YYYY-MM-DD => liczba wolnych slotów (0..N)
+    const availability = new Map();
+    (function seedAvailability(){
+      const start = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      for(let m=0;m<3;m++){
+        for(let d=1; d<=31; d++){
+          const dt = new Date(start.getFullYear(), start.getMonth()+m, d);
+          if (dt.getMonth() !== (start.getMonth()+m)%12) continue; // skip overflow
+          const key = ymd(dt);
+          const w = dt.getDay(); // 0 Nd .. 6 So
+          // weekend: mniej lub 0
+          const base = (w===0||w===6) ? Math.floor(Math.random()*2) : Math.floor(Math.random()*6);
+          availability.set(key, base);
+        }
+      }
+    })();
 
     // ===== Elementy =====
     const monthLabelEl = document.getElementById('monthLabel');
     const gridEl = document.getElementById('grid');
     const selectedDateLabelEl = document.getElementById('selectedDateLabel');
     const slotsEl = document.getElementById('slots');
+    const onlyAvailableEl = document.getElementById('onlyAvailable');
+    const step30El = document.getElementById('step30');
+
     document.getElementById('prevBtn').addEventListener('click', () => { cursor = addMonths(cursor, -1); render(); });
     document.getElementById('nextBtn').addEventListener('click', () => { cursor = addMonths(cursor, 1); render(); });
     document.getElementById('todayBtn').addEventListener('click', () => { cursor = new Date(now.getFullYear(), now.getMonth(), 1); render(); });
+    onlyAvailableEl.addEventListener('change', render);
+    step30El.addEventListener('change', () => { stepMin = step30El.checked ? 30 : 60; renderSelectedDay(); });
+    document.getElementById('selectMorning').addEventListener('click', selectMorning);
+    document.getElementById('clearSlots').addEventListener('click', () => { selectedSlots.clear(); renderSelectedDay(); showToast('Wyczyszczono wybór slotów'); });
+    document.getElementById('findNext').addEventListener('click', findNextAvailableDay);
+    document.getElementById('exportIcs').addEventListener('click', () => { showToast('Eksport .ics: szkic (do podłączenia)'); });
 
-    // ===== Render =====
-    function render() {
-      // label miesiąca
-      monthLabelEl.textContent = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-      // siatka 6x7
+    // ===== Render kalendarza =====
+    function render(){
+      monthLabelEl.textContent = cursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
       const days = buildMonthMatrix(cursor);
       gridEl.innerHTML = '';
       days.forEach(d => {
         const inMonth = d.getMonth() === cursor.getMonth();
         const isTodayFlag = sameDate(d, new Date());
         const isSelected = selectedDate && sameDate(selectedDate, d);
+        const isWeekend = (d.getDay()===0 || d.getDay()===6);
+        const isPast = d < stripTime(new Date());
+        const key = ymd(d);
+        const avail = availability.get(key) ?? 0;
+        const filterOut = onlyAvailableEl.checked && avail===0;
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'day' + (inMonth ? '' : ' out') + (isSelected ? ' selected' : '');
-        btn.setAttribute('role', 'gridcell');
-        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-        btn.addEventListener('click', () => {
+        const cell = document.createElement('button');
+        cell.type='button';
+        cell.className='day'+(inMonth?'':' out')+(isSelected?' selected':'')+(isTodayFlag?' today':'')+(isWeekend?' weekend':'')+(isPast?' disabled':'');
+        cell.setAttribute('role','gridcell');
+        cell.setAttribute('aria-pressed', isSelected);
+        if (isPast) cell.setAttribute('aria-disabled','true');
+        if (filterOut) { cell.style.visibility='hidden'; cell.style.pointerEvents='none'; }
+
+        // click
+        cell.addEventListener('click', () => {
+          if (isPast) return;
           selectedDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
           renderSelectedDay();
-          render(); // re-render siatkę, by podświetlić
+          render();
         });
 
+        // header row inside day
         const top = document.createElement('div');
-        top.style.display = 'flex';
-        top.style.alignItems = 'center';
-        top.style.justifyContent = 'space-between';
+        top.style.display='flex'; top.style.alignItems='center'; top.style.justifyContent='space-between';
+        const num = document.createElement('div'); num.className='n'; num.textContent = String(d.getDate());
+        const right = document.createElement('span'); right.className='badge'; right.textContent = avail>3? '🟢' : (avail>0? '🟠' : '🔴');
+        top.appendChild(num); top.appendChild(right);
 
-        const dn = document.createElement('div');
-        dn.className = 'n';
-        dn.textContent = String(d.getDate());
-        top.appendChild(dn);
+        const hint = document.createElement('div');
+        hint.className='hint';
+        hint.textContent = isPast ? '— przeszły' : (avail>0? `${avail} wolnych` : 'brak miejsc');
 
-        if (isTodayFlag) {
-          const badge = document.createElement('span');
-          badge.className = 'badge';
-          badge.textContent = 'Dziś';
-          top.appendChild(badge);
+        cell.appendChild(top);
+        if (isPast){
+          const x = document.createElement('div'); x.className='x'; x.textContent='X'; cell.appendChild(x);
         }
-
-        const filler = document.createElement('div');
-        filler.style.marginTop = 'auto';
-        filler.style.fontSize = '11px';
-        filler.style.color = 'var(--muted)';
-        filler.textContent = '—';
-
-        btn.appendChild(top);
-        btn.appendChild(filler);
-        gridEl.appendChild(btn);
+        cell.appendChild(hint);
+        gridEl.appendChild(cell);
       });
 
-      // panel (jeśli wcześniej wybrany)
       renderSelectedDay();
     }
 
-    function renderSelectedDay() {
-      if (!selectedDate) {
-        selectedDateLabelEl.textContent = 'Kliknij dzień w kalendarzu';
-        slotsEl.innerHTML = '';
+    // ===== Panel slotów =====
+    function renderSelectedDay(){
+      slotsEl.innerHTML='';
+      if(!selectedDate){
+        selectedDateLabelEl.textContent='Kliknij dzień w kalendarzu';
         return;
       }
       selectedDateLabelEl.textContent = formatHumanDate(selectedDate);
-      // zbuduj sloty
-      const slots = buildSlots(selectedDate, SLOT_START_HOUR, SLOT_END_HOUR, SLOT_STEP_MIN);
-      slotsEl.innerHTML = '';
-      slots.forEach(({hour, minute, label}) => {
-        const key = slotKey(selectedDate, hour, minute);
-        const active = selectedSlots.has(key);
-        const li = document.createElement('button');
-        li.type = 'button';
-        li.className = 'slot' + (active ? ' active' : '');
-        li.setAttribute('role', 'option');
-        li.setAttribute('aria-pressed', active ? 'true' : 'false');
-        li.addEventListener('click', () => {
-          if (selectedSlots.has(key)) selectedSlots.delete(key); else selectedSlots.add(key);
-          console.log('slot:', key, selectedSlots.has(key) ? 'selected' : 'unselected');
+      const key = ymd(selectedDate);
+      const avail = availability.get(key) ?? 0;
+      if (avail===0){
+        const div=document.createElement('div');
+        div.style.padding='8px 12px';
+        div.style.color='var(--muted)';
+        div.textContent='Brak wolnych slotów w tym dniu (mock)';
+        slotsEl.appendChild(div);
+        return;
+      }
+      const slots = buildSlots(selectedDate, SLOT_START_HOUR, SLOT_END_HOUR, stepMin);
+      slots.forEach(({hour, minute, label})=>{
+        const k = slotKey(selectedDate, hour, minute);
+        const active = selectedSlots.has(k);
+        const btn = document.createElement('button');
+        btn.type='button'; btn.className='slot'+(active?' active':'');
+        btn.setAttribute('role','option');
+        btn.setAttribute('aria-pressed', active);
+        btn.addEventListener('click', ()=>{
+          if (selectedSlots.has(k)) selectedSlots.delete(k); else selectedSlots.add(k);
+          console.log('slot:', k, selectedSlots.has(k)?'selected':'unselected');
           renderSelectedDay();
+          showToast(`$${active? 'Usunięto':'Dodano'}: ${label}`.replace('$',''));
         });
+        const left=document.createElement('span'); left.textContent=label;
+        const right=document.createElement('span'); right.className='mark'; right.textContent= active? 'Wybrano' : '';
+        btn.appendChild(left); btn.appendChild(right);
+        slotsEl.appendChild(btn);
+      })
+    }
 
-        const left = document.createElement('span');
-        left.textContent = label;
-        const right = document.createElement('span');
-        right.className = 'mark';
-        right.textContent = active ? 'Wybrano' : '';
+    function selectMorning(){
+      if(!selectedDate){ showToast('Najpierw wybierz dzień'); return; }
+      const slots = buildSlots(selectedDate, 8, 12, stepMin);
+      slots.forEach(({hour,minute})=> selectedSlots.add(slotKey(selectedDate,hour,minute)) );
+      renderSelectedDay();
+      showToast('Zaznaczono sloty poranne (08–12)');
+    }
 
-        li.appendChild(left); li.appendChild(right);
-        slotsEl.appendChild(li);
-      });
+    function findNextAvailableDay(){
+      const start = selectedDate ? new Date(selectedDate) : new Date();
+      const probe = new Date(start.getFullYear(), start.getMonth(), start.getDate()+1);
+      for(let i=0;i<120;i++){
+        const d = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate()+i);
+        if (d < stripTime(new Date())) continue;
+        const key = ymd(d);
+        const avail = availability.get(key) ?? 0;
+        if (avail>0){ selectedDate = d; cursor = new Date(d.getFullYear(), d.getMonth(), 1); render(); showToast('Znaleziono najbliższy wolny dzień'); return; }
+      }
+      showToast('Brak wolnych dni w najbliższych miesiącach (mock)');
     }
 
     // ===== Utils =====
-    function buildMonthMatrix(cursor) {
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth();
+    function buildMonthMatrix(cursor){
+      const y = cursor.getFullYear(); const m = cursor.getMonth();
       const first = new Date(y, m, 1);
-      const firstWeekdayMon0 = (first.getDay() + 6) % 7; // 0..6, 0=Pn
-      const start = new Date(y, m, 1 - firstWeekdayMon0);
-      const cells = [];
-      for (let i = 0; i < 42; i++) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        cells.push(d);
-      }
+      const firstMon0 = (first.getDay()+6)%7; // 0=Pn
+      const start = new Date(y, m, 1-firstMon0);
+      const cells=[]; for(let i=0;i<42;i++){ const d=new Date(start); d.setDate(start.getDate()+i); cells.push(d); }
       return cells;
     }
-    function sameDate(a, b) {
-      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-    }
-    function addMonths(date, delta) {
-      return new Date(date.getFullYear(), date.getMonth() + delta, 1);
-    }
-    function formatHumanDate(d) {
-      return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    }
-    function slotKey(date, hour, minute) {
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      const hh = String(hour).padStart(2, '0');
-      const mi = String(minute).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-    }
-    function buildSlots(date, startHour, endHour, stepMin) {
-      const out = [];
-      for (let h = startHour; h < endHour; h++) {
-        for (let m = 0; m < 60; m += stepMin) {
-          out.push({hour: h, minute: m, label: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`});
-        }
-      }
-      return out;
-    }
+    function sameDate(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+    function addMonths(d,delta){ return new Date(d.getFullYear(), d.getMonth()+delta, 1); }
+    function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function ymd(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}` }
+    function formatHumanDate(d){ return d.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'}) }
+    function slotKey(date,hour,minute){ const yyyy=date.getFullYear(); const mm=String(date.getMonth()+1).padStart(2,'0'); const dd=String(date.getDate()).padStart(2,'0'); const hh=String(hour).padStart(2,'0'); const mi=String(minute).padStart(2,'0'); return `${yyyy}-${mm}-${dd}T${hh}:${mi}` }
+    function buildSlots(date,startHour,endHour,stepMin){ const out=[]; for(let h=startHour; h<endHour; h++){ for(let m=0; m<60; m+=stepMin){ out.push({hour:h,minute:m,label:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}); } } return out }
+
+    function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500) }
 
     // start
     render();
